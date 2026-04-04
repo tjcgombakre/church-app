@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Church Class Manager</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif}
+body{background:#f0f4ff;min-height:100vh}
+.landing{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:20px}
+.landing h1{font-size:24px;font-weight:800;color:#1a1a2e;text-align:center}
+.landing p{font-size:14px;color:#888;text-align:center;margin-top:-12px}
+.portal-cards{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;width:100%;max-width:520px}
+.portal-card{flex:1;min-width:180px;border-radius:20px;padding:28px 20px;text-align:center;cursor:pointer;transition:all 0.2s;border:2px solid transparent}
+.portal-card:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,0.12)}
+.portal-card .pc-icon{font-size:40px;margin-bottom:10px}
+.portal-card h2{font-size:16px;font-weight:800;margin-bottom:4px}
+.portal-card p{font-size:12px;opacity:0.75}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:#fff;border-radius:20px;padding:30px;width:100%;max-width:380px;box-shadow:0 4px 30px rgba(0,0,0,0.1);text-align:center}
+.login-card .lc-icon{font-size:44px;margin-bottom:10px}
+.login-card h2{font-size:20px;font-weight:800;color:#1a1a2e;margin-bottom:4px}
+.login-card p{font-size:13px;color:#888;margin-bottom:20px}
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:215px;background:#1a1a2e;display:flex;flex-direction:column;padding:16px 0;flex-shrink:0;overflow-y:auto}
+.sidebar-logo{padding:0 16px 14px;border-bottom:1px solid #ffffff22}
+.sidebar-logo h1{color:#fff;font-size:14px;font-weight:700;line-height:1.3}
+.sidebar-logo p{color:#aaa;font-size:11px;margin-top:3px}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#1dd1a1;display:inline-block;margin-left:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.sync-dot.off{background:#ff6b9d;animation:none}
+.nav-section{padding:10px 16px 3px;color:#aaa;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+.nav-btn{display:flex;align-items:center;gap:9px;padding:9px 16px;color:#ccc;font-size:13px;cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:all 0.2s}
+.nav-btn:hover{background:#ffffff11;color:#fff}
+.nav-btn.active{background:#ffffff22;color:#fff;border-left:3px solid #7c6ff7}
+.nav-btn.active.clr{border-left-color:var(--cl)}
+.nav-btn .icon{font-size:14px;width:18px;text-align:center}
+.nav-divider{height:1px;background:#ffffff11;margin:6px 16px}
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;padding:11px 20px;border-bottom:1px solid #e8e8f0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:10px;flex-wrap:wrap}
+.topbar h2{font-size:18px;font-weight:700;color:#1a1a2e}
+.topbar p{font-size:12px;color:#888}
+.content{padding:18px;flex:1}
+.parent-app{min-height:100vh;background:#f8f0ff}
+.parent-header{background:linear-gradient(135deg,#7c6ff7,#ff6b9d);padding:20px 24px;display:flex;align-items:center;justify-content:space-between}
+.parent-header h1{color:#fff;font-size:18px;font-weight:800}
+.parent-body{padding:18px;max-width:700px;margin:0 auto}
+.btn{padding:7px 14px;border-radius:10px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:#7c6ff7;color:#fff}.btn-primary:hover{background:#6a5ee6}
+.btn-secondary{background:#f0f0ff;color:#7c6ff7;border:1px solid #d0d0ff}
+.btn-success{background:#1dd1a1;color:#fff}
+.btn-danger{background:#ff6b9d;color:#fff}
+.btn-warn{background:#ff9f43;color:#fff}
+.btn-white{background:#fff;color:#7c6ff7}
+.btn-sm{padding:4px 10px;font-size:12px;border-radius:8px}
+.panel{background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;border:1px solid #e8e8f0}
+.panel>h3{font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.tab-row{display:flex;gap:3px;margin-bottom:16px;background:#f0f0ff;border-radius:12px;padding:4px;flex-wrap:wrap}
+.tab{padding:6px 13px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:none;color:#888;transition:all 0.2s}
+.tab.active{background:#fff;color:#7c6ff7;box-shadow:0 2px 8px rgba(124,111,247,0.15)}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:9px;margin-bottom:14px}
+.stat-card{background:#f8f8ff;border-radius:12px;padding:11px;text-align:center}
+.stat-card .num{font-size:20px;font-weight:700;color:#1a1a2e}
+.stat-card .lbl{font-size:10px;color:#888;margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f8f8ff;padding:8px 9px;text-align:left;font-weight:600;color:#444;font-size:11px;border-bottom:2px solid #e8e8f0}
+td{padding:7px 9px;border-bottom:1px solid #f0f0f8;color:#333;vertical-align:middle}
+tr:hover td{background:#fafafe}
+.avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.tag{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:600}
+.tag-green{background:#e8fff8;color:#0d9e75}.tag-red{background:#fff0f5;color:#d63060}
+.tag-blue{background:#f0f0ff;color:#7c6ff7}.tag-orange{background:#fff8f0;color:#e07000}
+.form-group{display:flex;flex-direction:column;gap:3px;flex:1;min-width:100px}
+.form-group label{font-size:11px;font-weight:600;color:#666}
+.form-group input,.form-group select,.form-group textarea{padding:7px 10px;border-radius:9px;border:1.5px solid #e0e0f0;font-size:13px;outline:none;transition:border-color 0.2s;background:#fff;width:100%}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:#7c6ff7}
+.form-group textarea{resize:vertical;min-height:60px}
+.form-row{display:flex;gap:9px;margin-bottom:9px;flex-wrap:wrap}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:20px;padding:20px;width:94%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:15px;font-weight:700;margin-bottom:13px;color:#1a1a2e}
+.modal-btns{display:flex;gap:9px;margin-top:13px;justify-content:flex-end}
+.att-btn{width:28px;height:28px;border-radius:50%;border:none;cursor:pointer;font-size:11px;font-weight:700}
+.att-present{background:#1dd1a1;color:#fff}.att-absent{background:#ff6b9d;color:#fff}.att-none{background:#f0f0f0;color:#aaa}
+.pct-bar{height:6px;background:#f0f0f8;border-radius:4px;overflow:hidden;width:60px;display:inline-block;vertical-align:middle}
+.pct-fill{height:100%;border-radius:4px}
+.chip{padding:4px 10px;border-radius:20px;border:2px solid #e0e0f0;font-size:11px;cursor:pointer;font-weight:600;background:#fff;color:#666;transition:all 0.2s}
+.chip.sel{border-color:#7c6ff7;background:#f0f0ff;color:#7c6ff7}
+.chip-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px}
+.score-input{width:52px;padding:3px 6px;border-radius:7px;border:1.5px solid #e0e0f0;font-size:12px;text-align:center;outline:none}
+.score-input:focus{border-color:#7c6ff7}
+.uni-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:none}
+.uni-ret{background:#e8fff8;color:#0d9e75}.uni-kept{background:#fff0f5;color:#d63060}.uni-none{background:#f0f0f0;color:#888}
+.scroll-x{overflow-x:auto}
+.empty-state{text-align:center;padding:32px 16px;color:#aaa}
+.empty-state .bi{font-size:32px;margin-bottom:8px}
+.class-hero{border-radius:14px;padding:16px 20px;margin-bottom:14px;display:flex;align-items:center;gap:14px}
+.class-hero .em{font-size:36px}
+.class-hero h2{font-size:18px;font-weight:800;color:#fff}
+.class-hero p{font-size:12px;color:rgba(255,255,255,0.8)}
+.week-row{display:grid;grid-template-columns:105px repeat(6,1fr);gap:5px;margin-bottom:5px}
+.wk-lbl{background:#f0f0f8;border-radius:9px;padding:6px;font-size:10px;font-weight:700;color:#7c6ff7;display:flex;flex-direction:column;justify-content:center;text-align:center;line-height:1.5}
+.wk-lbl span{font-size:9px;color:#aaa;font-weight:400}
+.tt-cell{border-radius:9px;border:2px dashed #e0e0f0;padding:5px;min-height:56px;cursor:pointer;transition:all 0.2s;font-size:10px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:2px;background:#fafafe}
+.tt-cell:hover{border-color:#7c6ff7;background:#f0f0ff}
+.tt-cell.filled{border-style:solid;background:#fff}
+.tt-cell .t-name{font-weight:700;font-size:11px;color:#1a1a2e}
+.tt-cell .t-lesson{font-size:9px;color:#7c6ff7;margin-top:1px;word-break:break-word;line-height:1.3}
+.tt-header-row{display:grid;grid-template-columns:105px repeat(6,1fr);gap:5px;margin-bottom:6px}
+.tt-col-hdr{border-radius:9px;padding:6px;font-size:10px;font-weight:700;text-align:center;color:#fff}
+.month-div{font-size:11px;font-weight:700;color:#7c6ff7;padding:7px 0 3px;border-top:1px solid #e8e8f0;margin-top:3px}
+.yr-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.yr-nav button{background:#f0f0ff;border:none;border-radius:8px;padding:4px 11px;font-size:13px;font-weight:700;cursor:pointer;color:#7c6ff7}
+.yr-nav span{font-size:15px;font-weight:700;color:#1a1a2e}
+.notice{background:#f0f8ff;border:1px solid #c0d8ff;border-radius:9px;padding:8px 12px;font-size:12px;color:#2060c0;margin-bottom:11px}
+.srow{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid #f0f0f8}
+.ph-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f8;font-size:12px}
+.loading-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#7c6ff7}
+.spinner{width:40px;height:40px;border:4px solid #e0e0ff;border-top:4px solid #7c6ff7;border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="root"><div class="loading-screen"><div class="spinner"></div><p style="font-size:14px;font-weight:600">Connecting to database...</p></div></div>
+<div class="modal-overlay" id="modal-overlay"><div class="modal" id="modal-box"></div></div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import{getDatabase,ref,set,onValue,update,remove,get}from"https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+
+const firebaseConfig={
+  apiKey:"AIzaSyCp1DjIYixBco9SHo3LUZMqHxBZbqkQBFo",
+  authDomain:"church-class-manager.firebaseapp.com",
+  databaseURL:"https://church-class-manager-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"church-class-manager",
+  storageBucket:"church-class-manager.firebasestorage.app",
+  messagingSenderId:"527438905285",
+  appId:"1:527438905285:web:d986b84b4324326c9dd5ac"
+};
+
+const firebaseApp=initializeApp(firebaseConfig);
+const db=getDatabase(firebaseApp);
+
+// ===== CONSTANTS =====
+const CLS=[
+  {id:'nursery',name:'Nursery',emoji:'🍼',color:'#ff6b9d',light:'#fff0f6'},
+  {id:'kinder',name:'Kindergarten',emoji:'🌈',color:'#ff9f43',light:'#fff8f0'},
+  {id:'lprimary',name:'Lower Primary',emoji:'📚',color:'#54a0ff',light:'#f0f7ff'},
+  {id:'uprimary',name:'Upper Primary',emoji:'🎓',color:'#5f27cd',light:'#f4f0ff'},
+  {id:'jyouth',name:'Junior Youth',emoji:'⭐',color:'#00d2d3',light:'#f0fffe'},
+  {id:'iyouth',name:'Intermediate Youth',emoji:'🔥',color:'#1dd1a1',light:'#f0fff8'},
+];
+const SIZES=['XS','S','M','L','XL'];
+const STOCK={XS:4,S:8,M:7,L:5,XL:3};
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const BEHAVIOURS=['Attentive','Participative','Respectful','Helpful','Creative','Needs Reminder','Quiet','Energetic','On-task','Off-task'];
+const SCHOOL_TYPES=['Public','Private','International','Homeschool'];
+const MY_PH={
+  '2025-01-01':"New Year's Day",'2025-01-29':'Chinese New Year','2025-01-30':'Chinese New Year (2)',
+  '2025-02-01':'Federal Territory Day','2025-02-11':'Thaipusam','2025-03-30':'Nuzul Al-Quran',
+  '2025-03-31':'Hari Raya Aidilfitri','2025-04-01':'Hari Raya (2)','2025-05-01':'Labour Day',
+  '2025-05-12':'Wesak Day','2025-06-02':"Agong's Birthday",'2025-06-07':'Hari Raya Aidiladha',
+  '2025-06-28':'Awal Muharram','2025-08-31':'National Day','2025-09-05':'Maulidur Rasul',
+  '2025-09-16':'Malaysia Day','2025-10-20':'Deepavali','2025-12-25':'Christmas Day',
+  '2026-01-01':"New Year's Day",'2026-01-28':'Chinese New Year','2026-01-29':'Chinese New Year (2)',
+  '2026-02-01':'Federal Territory Day','2026-03-20':'Hari Raya Aidilfitri','2026-03-21':'Hari Raya (2)',
+  '2026-05-01':'Labour Day','2026-05-31':'Wesak Day','2026-06-01':"Agong's Birthday",
+  '2026-08-31':'National Day','2026-09-16':'Malaysia Day','2026-12-25':'Christmas Day',
+};
+const MY_SH=[
+  ['2025-01-01','2025-01-02'],['2025-03-15','2025-03-23'],['2025-05-17','2025-05-25'],
+  ['2025-07-19','2025-08-17'],['2025-09-13','2025-09-21'],['2025-11-22','2026-01-01'],
+  ['2026-03-14','2026-03-22'],['2026-05-16','2026-05-24'],['2026-07-18','2026-08-16'],
+  ['2026-09-12','2026-09-20'],['2026-11-21','2026-12-31'],
+];
+const isPH=ds=>MY_PH[ds]||null;
+const isSH=ds=>{const d=new Date(ds);return MY_SH.some(([s,e])=>d>=new Date(s)&&d<=new Date(e));};
+const holInfo=ds=>{const ph=isPH(ds);if(ph)return{type:'ph',label:ph};if(isSH(ds))return{type:'sh',label:'School Holiday'};return null;};
+
+// ===== STATE =====
+let S={
+  students:[],teachers:[],attendance:{},sessions:[],behaviour:[],
+  tests:[],uniform:{},timetable:{},ttYear:new Date().getFullYear(),
+  events:{},adminPass:'admin123'
+};
+let syncConnected=false;
+
+// ===== FIREBASE SYNC =====
+async function saveToFirebase(path,data){
+  try{await set(ref(db,path),data);return true;}
+  catch(e){console.error('Save error',e);return false;}
+}
+async function updateFirebase(path,data){
+  try{await update(ref(db,path),data);return true;}
+  catch(e){console.error('Update error',e);return false;}
+}
+async function removeFirebase(path){
+  try{await remove(ref(db,path));return true;}
+  catch(e){console.error('Remove error',e);return false;}
+}
+
+// Listen for real-time changes from Firebase
+function startRealtimeSync(){
+  onValue(ref(db,'church'),snapshot=>{
+    const data=snapshot.val();
+    if(data){
+      S={...S,...data};
+      // ensure arrays/objects
+      if(!S.students)S.students=[];
+      if(!S.teachers)S.teachers=[];
+      if(!S.sessions)S.sessions=[];
+      if(!S.attendance)S.attendance={};
+      if(!S.behaviour)S.behaviour=[];
+      if(!S.tests)S.tests=[];
+      if(!S.uniform)S.uniform={};
+      if(!S.timetable)S.timetable={};
+      if(!S.events)S.events={};
+      if(!S.adminPass)S.adminPass='admin123';
+    }
+    syncConnected=true;
+    updateSyncDot();
+    // re-render current page if admin is logged in
+    if(screen==='admin')adminNav(curAdminPage,false);
+    else if(screen==='parent')renderParentPortal();
+    else if(screen==='landing')renderRoot();
+  },err=>{
+    syncConnected=false;updateSyncDot();
+    console.error('Sync error',err);
+  });
+}
+
+function updateSyncDot(){
+  const dot=document.getElementById('sync-dot');
+  if(dot){dot.className='sync-dot'+(syncConnected?'':' off');}
+}
+
+// Save helpers per collection
+const saveStudents=()=>saveToFirebase('church/students',S.students);
+const saveTeachers=()=>saveToFirebase('church/teachers',S.teachers);
+const saveSessions=()=>saveToFirebase('church/sessions',S.sessions);
+const saveAttendance=()=>saveToFirebase('church/attendance',S.attendance);
+const saveBehaviour=()=>saveToFirebase('church/behaviour',S.behaviour);
+const saveTests=()=>saveToFirebase('church/tests',S.tests);
+const saveUniform=()=>saveToFirebase('church/uniform',S.uniform);
+const saveTimetable=()=>saveToFirebase('church/timetable',S.timetable);
+const saveEvents=()=>saveToFirebase('church/events',S.events);
+const saveSettings=()=>saveToFirebase('church/adminPass',S.adminPass);
+const saveTTYear=()=>saveToFirebase('church/ttYear',S.ttYear);
+
+// ===== HELPERS =====
+const R=id=>document.getElementById(id);
+const ini=n=>n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+const clById=id=>CLS.find(c=>c.id===id)||CLS[0];
+const studsIn=cid=>(S.students||[]).filter(s=>s.classId===cid);
+const calcAge=dob=>{if(!dob)return'–';const b=new Date(dob),t=new Date();let a=t.getFullYear()-b.getFullYear();if(t<new Date(t.getFullYear(),b.getMonth(),b.getDate()))a--;return a;};
+const pctColor=p=>p>=80?'#1dd1a1':p>=60?'#ff9f43':'#ff6b9d';
+function attPct(sid){const sess=S.sessions||[];if(!sess.length)return null;const p=sess.filter(s=>(S.attendance||{})[s+'_'+sid]==='P').length;return Math.round(p/sess.length*100);}
+function classPct(cid){const st=studsIn(cid);if(!st.length||!(S.sessions||[]).length)return null;const v=st.map(x=>attPct(x.id)).filter(x=>x!==null);return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):null;}
+function overallPct(){const v=CLS.map(c=>classPct(c.id)).filter(x=>x!==null);return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):null;}
+const fmt=d=>`${d.getDate()} ${MONTHS[d.getMonth()].slice(0,3)}`;
+const isoDate=d=>{const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return`${y}-${m}-${dd}`;};
+function getWeeks(year){
+  const weeks=[];let d=new Date(year,0,1);const jan1=new Date(year,0,1);
+  while(d.getDay()!==0)d.setDate(d.getDate()+1);
+  if(jan1.getDay()!==0){const end=new Date(d);end.setDate(end.getDate()-1);weeks.push({n:1,start:jan1,end});}
+  let wn=weeks.length+1;
+  while(d.getFullYear()===year){const s=new Date(d),e=new Date(d);e.setDate(e.getDate()+6);if(e.getFullYear()>year)e.setFullYear(year,11,31);weeks.push({n:wn,start:s,end:e});wn++;d.setDate(d.getDate()+7);}
+  return weeks;
+}
+
+// ===== SCREEN STATE =====
+let screen='loading';
+let curAdminPage='dashboard';
+const classTab={};
+let parentUser=null,parentKid=null;
+
+function setScreen(s){screen=s;renderRoot();}
+function renderRoot(){
+  const root=R('root');
+  if(screen==='landing')root.innerHTML=landingHTML();
+  else if(screen==='adminLogin')root.innerHTML=adminLoginHTML();
+  else if(screen==='admin')renderAdmin();
+  else if(screen==='parentLogin')root.innerHTML=parentLoginHTML();
+  else if(screen==='parent')renderParentPortal();
+}
+
+// ===== LANDING =====
+function landingHTML(){return`
+<div class="landing">
+  <div style="font-size:48px">✝</div>
+  <h1>Church Class Manager</h1>
+  <p>Choose your portal to continue</p>
+  <div class="portal-cards">
+    <div class="portal-card" style="background:#f0f0ff;border-color:#d0d0ff" onclick="setScreen('adminLogin')">
+      <div class="pc-icon">👩‍🏫</div>
+      <h2 style="color:#5f27cd">Admin / Teacher</h2>
+      <p style="color:#5f27cd">Manage classes, attendance, timetable & records</p>
+    </div>
+    <div class="portal-card" style="background:#fff0f6;border-color:#ffd0e8" onclick="setScreen('parentLogin')">
+      <div class="pc-icon">👨‍👩‍👧</div>
+      <h2 style="color:#ff6b9d">Parent</h2>
+      <p style="color:#ff6b9d">View your child's attendance, notes & results</p>
+    </div>
+  </div>
+  <div style="font-size:12px;color:#aaa;display:flex;align-items:center;gap:5px">
+    Live sync <span id="sync-dot" class="sync-dot ${syncConnected?'':'off'}"></span>
+  </div>
+</div>`;}
+
+// ===== ADMIN LOGIN =====
+function adminLoginHTML(){return`
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="lc-icon">🔐</div>
+    <h2>Admin Portal</h2>
+    <p>Enter the admin password to continue</p>
+    <div class="form-group"><label>Password</label><input type="password" id="a-pass" placeholder="Admin password" onkeydown="if(event.key==='Enter')doAdminLogin()"/></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px" onclick="doAdminLogin()">Enter Admin Portal</button>
+    <div id="a-err" style="color:#ff6b9d;font-size:12px;margin-top:10px"></div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:16px" onclick="setScreen('landing')">← Back</button>
+    <div style="font-size:11px;color:#bbb;margin-top:12px">Default password: admin123</div>
+  </div>
+</div>`;}
+window.doAdminLogin=function(){
+  const p=R('a-pass').value;
+  if(p===S.adminPass){curAdminPage='dashboard';setScreen('admin');}
+  else{R('a-err').textContent='Incorrect password.';}
+};
+
+// ===== PARENT LOGIN =====
+function parentLoginHTML(){return`
+<div class="login-wrap" style="background:#f8f0ff">
+  <div class="login-card">
+    <div class="lc-icon">👨‍👩‍👧</div>
+    <h2>Parent Portal</h2>
+    <p>Enter your child's name and password</p>
+    <div class="form-group"><label>Child's Full Name</label><input id="p-name" placeholder="e.g. Aiden Lim"/></div>
+    <div class="form-group" style="margin-top:8px"><label>Password</label><input type="password" id="p-pass" placeholder="Password" onkeydown="if(event.key==='Enter')doParentLogin()"/></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:14px;background:#ff6b9d" onclick="doParentLogin()">View My Child's Records</button>
+    <div id="p-err" style="color:#ff6b9d;font-size:12px;margin-top:10px"></div>
+    <button class="btn btn-secondary btn-sm" style="margin-top:16px" onclick="setScreen('landing')">← Back</button>
+  </div>
+</div>`;}
+window.doParentLogin=function(){
+  const name=R('p-name').value.trim().toLowerCase();
+  const pass=R('p-pass').value.trim();
+  const match=(S.students||[]).find(s=>s.name.toLowerCase()===name&&s.parentPass===pass);
+  if(match){parentUser={pass};parentKid=match.id;setScreen('parent');}
+  else{R('p-err').textContent='Incorrect name or password.';}
+};
+
+// ===== PARENT PORTAL =====
+function renderParentPortal(){
+  const myKids=(S.students||[]).filter(s=>s.parentPass===parentUser?.pass);
+  R('root').innerHTML=`
+  <div class="parent-app">
+    <div class="parent-header">
+      <h1>👨‍👩‍👧 Parent Portal</h1>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:11px;color:rgba(255,255,255,0.8);display:flex;align-items:center;gap:4px">Live <span class="sync-dot ${syncConnected?'':'off'}" id="sync-dot"></span></span>
+        <button class="btn btn-white btn-sm" onclick="parentUser=null;parentKid=null;setScreen('landing')">Logout</button>
+      </div>
+    </div>
+    <div class="parent-body">
+      ${myKids.length>1?`<div class="tab-row" style="margin-bottom:14px">${myKids.map(s=>`<button class="tab ${parentKid===s.id?'active':''}" onclick="parentKid='${s.id}';renderParentPortal()">${s.name}</button>`).join('')}</div>`:''}
+      ${parentKid?parentRecordHTML(parentKid):'<div class="empty-state"><div class="bi">👧</div><p>No child found</p></div>'}
+    </div>
+  </div>`;}
+window.renderParentPortal=renderParentPortal;
+
+function parentRecordHTML(sid){
+  const s=(S.students||[]).find(x=>x.id===sid);if(!s)return'';
+  const cl=clById(s.classId),pct=attPct(sid);
+  const notes=(S.behaviour||[]).filter(b=>b.sid===sid);
+  const tests=(S.tests||[]).filter(t=>t.classId===s.classId);
+  const uni=(S.uniform||{})[sid]||{};
+  return`
+  <div class="panel" style="border-top:4px solid ${cl.color}">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <div class="avatar" style="background:${s.avatar};width:44px;height:44px;font-size:16px">${ini(s.name)}</div>
+      <div><div style="font-size:17px;font-weight:800">${s.name}</div><div style="font-size:12px;color:#888">${cl.emoji} ${cl.name} · Age ${calcAge(s.dob)}</div></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="num" style="color:${pct!==null?pctColor(pct):'#ccc'}">${pct!==null?pct+'%':'–'}</div><div class="lbl">Attendance</div></div>
+      <div class="stat-card"><div class="num">${notes.length}</div><div class="lbl">Teacher Notes</div></div>
+      <div class="stat-card"><div class="num">${uni.size||'–'}</div><div class="lbl">Uniform Size</div></div>
+      <div class="stat-card"><div class="num" style="font-size:14px">${uni.returned==='yes'?'✓':uni.returned==='no'?'✗':'–'}</div><div class="lbl">Uniform ${uni.returned==='yes'?'Returned':uni.returned==='no'?'Not Returned':'Status'}</div></div>
+    </div>
+  </div>
+  <div class="panel"><h3>📝 Teacher Notes</h3>
+    ${notes.length?notes.slice().reverse().map(b=>`<div class="srow"><div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:2px"><span style="font-size:10px;font-weight:700;color:#7c6ff7">${b.date}</span>
+      ${(b.chips||[]).map(ch=>`<span class="tag tag-blue">${ch}</span>`).join('')}</div>
+      ${b.note?`<div style="font-size:11px;color:#555">${b.note}</div>`:''}</div></div>`).join(''):
+    '<p style="color:#aaa;font-size:12px">No notes yet</p>'}
+  </div>
+  <div class="panel"><h3>📊 Test Results</h3>
+    ${tests.length?`<table><thead><tr><th>Test</th><th>Date</th><th>Score</th><th>Out of</th></tr></thead><tbody>
+      ${tests.map(t=>{const sc=(t.scores||{})[sid];return`<tr>
+        <td style="font-weight:600">${t.name}</td><td>${t.date}</td>
+        <td style="font-weight:700;color:${sc!==undefined?pctColor(Math.round(sc/t.total*100)):'#ccc'}">${sc!==undefined?sc:'–'}</td>
+        <td>${t.total}</td></tr>`}).join('')}
+    </tbody></table>`:'<p style="color:#aaa;font-size:12px">No tests yet</p>'}
+  </div>`;}
+
+// ===== ADMIN APP =====
+function renderAdmin(){
+  R('root').innerHTML=`
+  <div class="app">
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <h1>✝ Church Class Manager</h1>
+        <p style="display:flex;align-items:center">Live sync<span id="sync-dot" class="sync-dot ${syncConnected?'':'off'}"></span></p>
+      </div>
+      <div class="nav-section">Main</div>
+      <button class="nav-btn" onclick="adminNav('dashboard')" id="nav-dashboard"><span class="icon">🏠</span>Dashboard</button>
+      <button class="nav-btn" onclick="adminNav('timetable')" id="nav-timetable"><span class="icon">📅</span>Timetable</button>
+      <button class="nav-btn" onclick="adminNav('teachers')" id="nav-teachers"><span class="icon">👩‍🏫</span>Teachers</button>
+      <button class="nav-btn" onclick="adminNav('students')" id="nav-students"><span class="icon">👥</span>Students</button>
+      <div class="nav-section">Classes</div>
+      ${CLS.map(c=>`<button class="nav-btn clr" onclick="adminNav('class_${c.id}')" id="nav-class_${c.id}" style="--cl:${c.color}"><span class="icon">${c.emoji}</span>${c.name}</button>`).join('')}
+      <div class="nav-divider"></div>
+      <button class="nav-btn" onclick="adminNav('settings')" id="nav-settings"><span class="icon">⚙️</span>Settings</button>
+      <button class="nav-btn" onclick="setScreen('landing')" style="color:#ff9f43"><span class="icon">🚪</span>Exit to Home</button>
+    </div>
+    <div class="main">
+      <div class="topbar">
+        <div><h2 id="pg-title">Dashboard</h2><p id="pg-sub"></p></div>
+        <div id="topbar-actions" style="display:flex;gap:7px;flex-wrap:wrap"></div>
+      </div>
+      <div class="content" id="main-content"></div>
+    </div>
+  </div>`;
+  adminNav(curAdminPage);
+}
+
+function adminNav(page,rerender=true){
+  curAdminPage=page;
+  if(!rerender)return rerenderCurrentPage();
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const nb=R('nav-'+page);if(nb)nb.classList.add('active');
+  const titles={dashboard:'Dashboard',timetable:'Timetable & Calendar',teachers:'Teachers',students:'Students',settings:'Settings'};
+  const subs={dashboard:'Live overview of all classes',timetable:'Full-year planning — real-time sync active',teachers:'Manage your teaching team',students:'All students directory',settings:'Admin preferences'};
+  CLS.forEach(c=>{titles['class_'+c.id]=c.emoji+' '+c.name;subs['class_'+c.id]='Attendance, behaviour, tests & uniform';});
+  if(R('pg-title'))R('pg-title').textContent=titles[page]||'';
+  if(R('pg-sub'))R('pg-sub').textContent=subs[page]||'';
+  if(R('topbar-actions'))R('topbar-actions').innerHTML='';
+  if(R('main-content'))R('main-content').innerHTML='';
+  rerenderCurrentPage();
+}
+
+function rerenderCurrentPage(){
+  const page=curAdminPage;
+  if(page==='dashboard')renderDash();
+  else if(page==='timetable')renderTimetable();
+  else if(page==='teachers')renderTeachers();
+  else if(page==='students')renderStudents();
+  else if(page==='settings')renderSettings();
+  else if(page.startsWith('class_'))renderClassHub(page.replace('class_',''));
+}
+
+// ===== SETTINGS =====
+function renderSettings(){
+  if(!R('main-content'))return;
+  R('main-content').innerHTML=`
+  <div class="panel"><h3>⚙️ Admin Password</h3>
+    <div class="form-row">
+      <div class="form-group"><label>New Password</label><input type="password" id="s-p1" placeholder="New password"/></div>
+      <div class="form-group"><label>Confirm</label><input type="password" id="s-p2" placeholder="Confirm"/></div>
+    </div>
+    <button class="btn btn-primary" onclick="changePass()">Update Password</button>
+    <div id="s-msg" style="font-size:12px;margin-top:8px"></div>
+  </div>
+  <div class="panel"><h3>☁️ Sync Status</h3>
+    <p style="font-size:13px;color:#888">All data is synced live to Firebase. Every change is instantly visible to all teachers and parents.</p>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;font-weight:600">
+      <span class="sync-dot ${syncConnected?'':'off'}"></span>
+      ${syncConnected?'Connected — live sync active':'Disconnected — check internet connection'}
+    </div>
+  </div>`;}
+window.changePass=async function(){
+  const p1=R('s-p1').value,p2=R('s-p2').value;
+  if(!p1){R('s-msg').textContent='Please enter a password.';R('s-msg').style.color='#ff6b9d';return;}
+  if(p1!==p2){R('s-msg').textContent='Passwords do not match.';R('s-msg').style.color='#ff6b9d';return;}
+  S.adminPass=p1;await saveSettings();R('s-msg').textContent='Password updated!';R('s-msg').style.color='#1dd1a1';
+};
+
+// ===== DASHBOARD =====
+function renderDash(){
+  if(!R('main-content'))return;
+  R('main-content').innerHTML=`
+  <div class="stats-row">
+    <div class="stat-card"><div class="num">${(S.students||[]).length}</div><div class="lbl">Students</div></div>
+    <div class="stat-card"><div class="num">${(S.teachers||[]).length}</div><div class="lbl">Teachers</div></div>
+    <div class="stat-card"><div class="num">${(S.sessions||[]).length}</div><div class="lbl">Sessions</div></div>
+    <div class="stat-card"><div class="num">${overallPct()!==null?overallPct()+'%':'–'}</div><div class="lbl">Overall Att.</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px;margin-bottom:16px">
+    ${CLS.map(cl=>{const n=studsIn(cl.id).length,pct=classPct(cl.id);return`
+    <div style="background:${cl.light};border-radius:14px;padding:14px;cursor:pointer;transition:transform 0.2s" onclick="adminNav('class_${cl.id}')" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      <div style="font-size:22px;margin-bottom:5px">${cl.emoji}</div>
+      <div style="font-weight:800;font-size:13px;color:${cl.color}">${cl.name}</div>
+      <div style="font-size:11px;color:#888;margin-top:1px">${n} students</div>
+      ${pct!==null?`<div style="margin-top:7px;display:flex;align-items:center;gap:6px"><div class="pct-bar"><div class="pct-fill" style="width:${pct}%;background:${cl.color}"></div></div><span style="font-size:11px;font-weight:700;color:${cl.color}">${pct}%</span></div>`:
+      '<div style="font-size:10px;color:#bbb;margin-top:5px">No sessions yet</div>'}
+    </div>`}).join('')}
+  </div>
+  <div class="panel"><h3>📝 Recent Notes</h3>
+    ${(S.behaviour||[]).slice(-5).reverse().map(b=>{const s=(S.students||[]).find(x=>x.id===b.sid),cl=s?clById(s.classId):null;return s?`
+    <div class="srow"><div class="avatar" style="background:${s.avatar}">${ini(s.name)}</div>
+    <div><div style="font-size:12px;font-weight:700">${s.name} <span style="font-size:10px;color:#aaa;font-weight:400">${cl?cl.name:''} · ${b.date}</span></div>
+    <div style="font-size:11px;color:#555;margin-top:1px">${(b.chips||[]).join(', ')}${b.note?' — '+b.note:''}</div></div></div>`:''}).join('')||
+    '<div class="empty-state"><div class="bi">📝</div><p>No notes yet</p></div>'}
+  </div>`;}
+
+// ===== TEACHERS =====
+function renderTeachers(){
+  if(!R('main-content'))return;
+  if(R('topbar-actions'))R('topbar-actions').innerHTML=`<button class="btn btn-primary" onclick="openAddTeacher()">+ Add Teacher</button>`;
+  R('main-content').innerHTML=`
+  <div class="stats-row">
+    <div class="stat-card"><div class="num">${(S.teachers||[]).length}</div><div class="lbl">Total</div></div>
+    <div class="stat-card"><div class="num">${(S.teachers||[]).filter(t=>t.experienced==='yes').length}</div><div class="lbl">Experienced</div></div>
+    <div class="stat-card"><div class="num">${(S.teachers||[]).filter(t=>t.trained==='yes').length}</div><div class="lbl">Trained</div></div>
+    <div class="stat-card"><div class="num">${(S.teachers||[]).filter(t=>t.holySpirit==='yes').length}</div><div class="lbl">Holy Spirit</div></div>
+  </div>
+  <div class="panel"><div class="scroll-x"><table style="min-width:560px">
+    <thead><tr><th>Name</th><th>Experienced</th><th>Trained</th><th>Holy Spirit</th><th>Actions</th></tr></thead>
+    <tbody>${(S.teachers||[]).map(t=>`<tr>
+      <td><div style="display:flex;align-items:center;gap:7px"><div class="avatar" style="background:#7c6ff7">${ini(t.name)}</div><span style="font-weight:600">${t.name}</span></div></td>
+      <td><span class="tag ${t.experienced==='yes'?'tag-green':'tag-red'}">${t.experienced==='yes'?'Yes':'No'}</span></td>
+      <td><span class="tag ${t.trained==='yes'?'tag-green':'tag-red'}">${t.trained==='yes'?'Yes':'No'}</span></td>
+      <td><span class="tag ${t.holySpirit==='yes'?'tag-green':'tag-red'}">${t.holySpirit==='yes'?'Yes':'No'}</span></td>
+      <td><div style="display:flex;gap:5px"><button class="btn btn-secondary btn-sm" onclick="openEditTeacher('${t.id}')">Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="delTeacher('${t.id}')">✕</button></div></td>
+    </tr>`).join('')}</tbody>
+  </table></div></div>`;}
+function teacherModal(t){return`
+  <div class="form-row"><div class="form-group"><label>Full Name</label><input id="m-tn" value="${t?t.name:''}" placeholder="Teacher name"/></div></div>
+  <div class="form-row">
+    <div class="form-group"><label>Experienced?</label><select id="m-texp"><option value="no" ${!t||t.experienced==='no'?'selected':''}>No</option><option value="yes" ${t&&t.experienced==='yes'?'selected':''}>Yes</option></select></div>
+    <div class="form-group"><label>Trained?</label><select id="m-ttr"><option value="no" ${!t||t.trained==='no'?'selected':''}>No</option><option value="yes" ${t&&t.trained==='yes'?'selected':''}>Yes</option></select></div>
+    <div class="form-group"><label>Holy Spirit?</label><select id="m-ths"><option value="no" ${!t||t.holySpirit==='no'?'selected':''}>No</option><option value="yes" ${t&&t.holySpirit==='yes'?'selected':''}>Yes</option></select></div>
+  </div>`;}
+window.openAddTeacher=function(){openModal(`<h3>Add Teacher</h3>${teacherModal(null)}<div class="modal-btns"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="addTeacher()">Add</button></div>`);};
+window.addTeacher=async function(){const name=R('m-tn').value.trim();if(!name)return;S.teachers=[...(S.teachers||[]),{id:'t'+Date.now(),name,experienced:R('m-texp').value,trained:R('m-ttr').value,holySpirit:R('m-ths').value}];await saveTeachers();closeModal();};
+window.openEditTeacher=function(id){const t=(S.teachers||[]).find(x=>x.id===id);if(!t)return;openModal(`<h3>Edit Teacher</h3>${teacherModal(t)}<div class="modal-btns"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveTeacher('${id}')">Save</button></div>`);};
+window.saveTeacher=async function(id){const t=(S.teachers||[]).find(x=>x.id===id);if(!t)return;t.name=R('m-tn').value.trim()||t.name;t.experienced=R('m-texp').value;t.trained=R('m-ttr').value;t.holySpirit=R('m-ths').value;await saveTeachers();closeModal();};
+window.delTeacher=async function(id){if(confirm('Remove teacher?')){S.teachers=(S.teachers||[]).filter(t=>t.id!==id);await saveTeachers();}};
+
+// ===== STUDENTS =====
+let stuFilter='all';
+function renderStudents(){
+  if(!R('main-content'))return;
+  if(R('topbar-actions'))R('topbar-actions').innerHTML=`<button class="btn btn-primary" onclick="openAddStudent()">+ Add Student</button>`;
+  const list=stuFilter==='all'?S.students||[]:studsIn(stuFilter);
+  R('main-content').innerHTML=`
+  <div class="tab-row">
+    <button class="tab ${stuFilter==='all'?'active':''}" onclick="stuFilter='all';renderStudents()">All</button>
+    ${CLS.map(cl=>`<button class="tab ${stuFilter===cl.id?'active':''}" onclick="stuFilter='${cl.id}';renderStudents()">${cl.emoji} ${cl.name}</button>`).join('')}
+  </div>
+  <div class="panel"><div class="scroll-x"><table style="min-width:980px">
+    <thead><tr><th>Name</th><th>Class</th><th>Age</th><th>DOB</th><th>Holy Spirit</th><th>Baptised</th><th>Truth Seeking</th><th>School</th><th>Att.</th><th></th></tr></thead>
+    <tbody>${list.map(s=>{const cl=clById(s.classId),pct=attPct(s.id);return`<tr>
+      <td><div style="display:flex;align-items:center;gap:6px"><div class="avatar" style="background:${s.avatar}">${ini(s.name)}</div><span style="font-weight:600">${s.name}</span></div></td>
+      <td><span class="tag" style="background:${cl.light};color:${cl.color}">${cl.emoji} ${cl.name}</span></td>
+      <td style="font-weight:600">${calcAge(s.dob)}</td><td style="font-size:11px">${s.dob||'–'}</td>
+      <td><span class="tag ${s.holySpirit==='yes'?'tag-green':'tag-red'}">${s.holySpirit==='yes'?'Yes':'No'}</span></td>
+      <td><span class="tag ${s.baptised==='yes'?'tag-green':'tag-red'}">${s.baptised==='yes'?'Yes':'No'}</span></td>
+      <td><span class="tag ${s.truthSeeking==='yes'?'tag-orange':'tag-blue'}">${s.truthSeeking==='yes'?'Yes':'No'}</span></td>
+      <td style="font-size:11px">${s.schoolType||'–'}${s.schoolName?' · '+s.schoolName:''}</td>
+      <td>${pct!==null?`<div style="display:flex;align-items:center;gap:4px"><div class="pct-bar"><div class="pct-fill" style="width:${pct}%;background:${pctColor(pct)}"></div></div><span style="font-size:11px;font-weight:700;color:${pctColor(pct)}">${pct}%</span></div>`:'–'}</td>
+      <td><div style="display:flex;gap:4px"><button class="btn btn-secondary btn-sm" onclick="openEditStudent('${s.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="delStudent('${s.id}')">✕</button></div></td>
+    </tr>`}).join('')}</tbody>
+  </table></div></div>`;}
+function stuModal(s){return`
+  <div class="form-row"><div class="form-group"><label>Full Name</label><input id="m-sn" value="${s?s.name:''}" placeholder="Full name"/></div></div>
+  <div class="form-row">
+    <div class="form-group"><label>Class</label><select id="m-sc">${CLS.map(cl=>`<option value="${cl.id}" ${s&&s.classId===cl.id?'selected':''}>${cl.emoji} ${cl.name}</option>`).join('')}</select></div>
+    <div class="form-group"><label>Date of Birth</label><input type="date" id="m-sdob" value="${s?s.dob||'':''}"/></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>Holy Spirit</label><select id="m-shs"><option value="no" ${!s||s.holySpirit==='no'?'selected':''}>No</option><option value="yes" ${s&&s.holySpirit==='yes'?'selected':''}>Yes</option></select></div>
+    <div class="form-group"><label>Baptised</label><select id="m-sbap"><option value="no" ${!s||s.baptised==='no'?'selected':''}>No</option><option value="yes" ${s&&s.baptised==='yes'?'selected':''}>Yes</option></select></div>
+    <div class="form-group"><label>Truth Seeking</label><select id="m-sts"><option value="no" ${!s||s.truthSeeking==='no'?'selected':''}>No</option><option value="yes" ${s&&s.truthSeeking==='yes'?'selected':''}>Yes</option></select></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>School Type</label><select id="m-sst">${SCHOOL_TYPES.map(t=>`<option value="${t}" ${s&&s.schoolType===t?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="form-group"><label>School Name</label><input id="m-ssn" value="${s?s.schoolName||'':''}" placeholder="School name"/></div>
+  </div>
+  <div class="form-row"><div class="form-group"><label>Parent Login Password</label><input id="m-spp" value="${s?s.parentPass||'':''}" placeholder="e.g. 1234"/></div></div>`;}
+window.openAddStudent=function(){openModal(`<h3>Add Student</h3>${stuModal(null)}<div class="modal-btns"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="addStudent()">Add</button></div>`);};
+window.addStudent=async function(){
+  const name=R('m-sn').value.trim();if(!name)return;
+  const colors=['#ff6b9d','#ff9f43','#54a0ff','#5f27cd','#00d2d3','#1dd1a1'];
+  S.students=[...(S.students||[]),{id:'s'+Date.now(),name,classId:R('m-sc').value,avatar:colors[Math.floor(Math.random()*colors.length)],
+    dob:R('m-sdob').value,holySpirit:R('m-shs').value,baptised:R('m-sbap').value,truthSeeking:R('m-sts').value,
+    schoolType:R('m-sst').value,schoolName:R('m-ssn').value.trim(),parentPass:R('m-spp').value.trim()}];
+  await saveStudents();closeModal();
+};
+window.openEditStudent=function(id){const s=(S.students||[]).find(x=>x.id===id);if(!s)return;openModal(`<h3>Edit Student</h3>${stuModal(s)}<div class="modal-btns"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveStudent('${id}')">Save</button></div>`);};
+window.saveStudent=async function(id){
+  const s=(S.students||[]).find(x=>x.id===id);if(!s)return;
+  s.name=R('m-sn').value.trim()||s.name;s.classId=R('m-sc').value;s.dob=R('m-sdob').value;
+  s.holySpirit=R('m-shs').value;s.baptised=R('m-sbap').value;s.truthSeeking=R('m-sts').value;
+  s.schoolType=R('m-sst').value;s.schoolName=R('m-ssn').value.trim();s.parentPass=R('m-spp').value.trim();
+  await saveStudents();closeModal();
+};
+window.delStudent=async function(id){if(confirm('Remove student?')){S.students=(S.students||[]).filter(s=>s.id!==id);await saveStudents();}};
+
+// ===== TIMETABLE =====
+function renderTimetable(){
+  if(!R('main-content'))return;
+  if(R('topbar-actions'))R('topbar-actions').innerHTML=`<button class="btn btn-warn" onclick="openAddEvent()">+ Add Event</button>`;
+  const year=S.ttYear||new Date().getFullYear();
+  const weeks=getWeeks(year);let lastMonth=-1;
+  const rows=weeks.map(wk=>{
+    const m=wk.start.getMonth();
+    const div=m!==lastMonth?`<div class="month-div">${MONTHS[m]} ${year}</div>`:'';lastMonth=m;
+    const startIso=isoDate(wk.start);const hol=holInfo(startIso);const evt=(S.events||{})[startIso];
+    const cells=CLS.map(cl=>{
+      const key=`${year}_w${wk.n}_${cl.id}`;const val=(S.timetable||{})[key]||{};
+      return`<div class="tt-cell ${val.teacher?'filled':''}" style="${val.teacher?'border-color:'+cl.color+';':''}" onclick="openTTCell('${key}','${cl.name}',${wk.n})">
+        ${val.teacher?`<div class="t-name">${val.teacher}</div>${val.lesson?`<div class="t-lesson">${val.lesson}</div>`:''}`:`<span style="font-size:14px;color:#ddd">+</span>`}
+      </div>`}).join('');
+    return`${div}<div class="week-row"><div class="wk-lbl">W${wk.n}${hol?`<span style="color:${hol.type==='ph'?'#ff6b9d':'#ff9f43'}">${hol.type==='ph'?'🔴PH':'🟡SH'}</span>`:''}${evt?`<span style="color:#7c6ff7">📌</span>`:''}
+      <span>${fmt(wk.start)}</span><span>${fmt(wk.end)}</span></div>${cells}</div>`;}).join('');
+  R('main-content').innerHTML=`
+  <div class="panel" style="margin-bottom:10px"><div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12px"><span>🔴 <b>Public Holiday</b></span><span>🟡 <b>School Holiday</b></span><span>📌 <b>Church Event</b></span></div></div>
+  ${Object.keys(S.events||{}).length?`<div class="panel"><h3>📌 Church Events</h3>
+    ${Object.entries(S.events).sort((a,b)=>a[0].localeCompare(b[0])).map(([date,evt])=>`
+    <div class="ph-row"><div style="width:10px;height:10px;border-radius:50%;background:#7c6ff7;flex-shrink:0"></div>
+      <span style="font-weight:700;color:#7c6ff7">${date}</span><span style="flex:1">${evt.title}</span>
+      ${evt.note?`<span style="font-size:11px;color:#aaa">${evt.note}</span>`:''}
+      <button class="btn btn-danger btn-sm" onclick="delEvent('${date}')">✕</button></div>`).join('')}
+  </div>`:''}
+  <div class="panel">
+    <div class="yr-nav">
+      <button onclick="changeYear(${year-1})">‹</button><span>${year} Timetable</span><button onclick="changeYear(${year+1})">›</button>
+    </div>
+    <div class="scroll-x"><div style="min-width:800px">
+      <div class="tt-header-row"><div></div>${CLS.map(cl=>`<div class="tt-col-hdr" style="background:${cl.color}">${cl.emoji} ${cl.name}</div>`).join('')}</div>
+      ${rows}
+    </div></div>
+  </div>`;}
+window.changeYear=async function(y){S.ttYear=y;await saveTTYear();renderTimetable();};
+window.openTTCell=function(key,className,wkn){
+  const val=(S.timetable||{})[key]||{};
+  openModal(`<h3>Week ${wkn} — ${className}</h3>
+    <div class="form-group" style="margin-bottom:9px"><label>Teacher</label><select id="m-tsel">
+      <option value="">— None —</option>
+      ${(S.teachers||[]).map(t=>`<option value="${t.name}" ${val.teacher===t.name?'selected':''}>${t.name}</option>`).join('')}
+    </select></div>
+    <div class="form-group"><label>Lesson / Topic</label><input id="m-tlesson" value="${val.lesson||''}" placeholder="e.g. E1Y1B1 Lesson 2 Crossing the Red Sea"/></div>
+    <div class="modal-btns"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveSlot('${key}')">Save</button></div>`);
+};
+window.saveSlot=async function(key){
+  const t=R('m-tsel').value,l=R('m-tlesson').value.trim();
+  if(!S.timetable)S.timetable={};
+  if(t||l)S.timetable[key]={teacher:t,lesson:l};else delete S.timetable[key];
+  await saveTimetable();closeModal();
+};
+window.openAddEvent=function(){
+  const today=new Date().toISOString().split('T')[0];
+  openModal(`<h3>Add Church Event</h3>
+    <div class="form-group" style="margin-bottom:9px"><label>Date</label><input type="date" id="m-edate" value="${today}"/></div>
+    <div class="form-group" style="margin-bottom:9px"><label>Event Title</label><input id="m-etitle" placeholder="e.g. RE Camp, Baptism Service"/></div>
+    <div class="form-group"><label>Notes (optional)</label><input id="m-enote" placeholder="Additional info"/></div>
+    <div class="modal-btns"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveEvent()">Add</button></div>`);
+};
+window.saveEvent=async function(){
+  const date=R('m-edate').value,title=R('m-etitle').value.trim();if(!date||!title)return;
+  if(!S.events)S.events={};S.events[date]={title,note:R('m-enote').value.trim()};
+  await saveEvents();closeModal();
+};
+window.delEvent=async function(date){delete S.events[date];await saveEvents();};
+
+// ===== CLASS HUB =====
+function renderClassHub(cid){
+  if(!R('main-content'))return;
+  const cl=clById(cid);const tab=classTab[cid]||'attendance';
+  R('main-content').innerHTML=`
+  <div class="class-hero" style="background:linear-gradient(135deg,${cl.color},${cl.color}bb)">
+    <div class="em">${cl.emoji}</div><div><h2>${cl.name}</h2><p>${studsIn(cid).length} students</p></div>
+  </div>
+  <div class="tab-row">
+    <button class="tab ${tab==='attendance'?'active':''}" onclick="setClassTab('${cid}','attendance')">✅ Attendance</button>
+    <button class="tab ${tab==='behaviour'?'active':''}" onclick="setClassTab('${cid}','behaviour')">📝 Behaviour</button>
+    <button class="tab ${tab==='tests'?'active':''}" onclick="setClassTab('${cid}','tests')">📊 Tests</button>
+    <button class="tab ${tab==='uniform'?'active':''}" onclick="setClassTab('${cid}','uniform')">👕 Uniform</button>
+  </div>
+  <div id="tab-body"></div>`;
+  if(R('topbar-actions'))R('topbar-actions').innerHTML='';
+  if(tab==='attendance'){if(R('topbar-actions'))R('topbar-actions').innerHTML=`<button class="btn btn-secondary" onclick="openAddSession()">+ Session</button><button class="btn btn-success" onclick="dlAtt()">⬇ Excel</button>`;renderAttTab(cid);}
+  else if(tab==='behaviour'){if(R('topbar-actions'))R('topbar-actions').innerHTML=`<button class="btn btn-primary" onclick="openBehModal('${cid}')">+ Note</button>`;renderBehTab(cid);}
+  else if(tab==='tests'){if(R('topbar-actions'))R('topbar-actions').innerHTML=`<button class="btn btn-primary" onclick="openAddTest('${cid}')">+ Test</button>`;renderTestTab(cid);}
+  else renderUniTab(cid);
+}
+window.setClassTab=function(cid,tab){classTab[cid]=tab;renderClassHub(cid);};
+
+// ATT
+function renderAttTab(cid){
+  if(!R('tab-body'))return;
+  const studs=studsIn(cid),sessions=S.sessions||[],cpct=classPct(cid);
+  R('tab-body').innerHTML=`
+  ${!sessions.length?`<div class="panel"><div class="empty-state"><div class="bi">📅</div><p>No sessions. Click "+ Session".</p></div></div>`:`
+  <div class="panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+      <h3 style="margin:0">Attendance</h3>
+      ${cpct!==null?`<span style="font-size:15px;font-weight:800;color:${pctColor(cpct)}">${cpct}% class avg</span>`:''}
+    </div>
+    <div class="scroll-x"><table style="min-width:420px">
+      <thead><tr><th>Student</th>${sessions.map(s=>`<th style="text-align:center;font-size:10px">${s}</th>`).join('')}<th style="text-align:center">%</th></tr></thead>
+      <tbody>${studs.map(s=>{const pct=attPct(s.id);return`<tr>
+        <td><div style="display:flex;align-items:center;gap:6px"><div class="avatar" style="background:${s.avatar}">${ini(s.name)}</div><b>${s.name}</b></div></td>
+        ${sessions.map(sess=>{const k=sess+'_'+s.id,v=(S.attendance||{})[k]||'';return`<td style="text-align:center"><button class="att-btn ${v==='P'?'att-present':v==='A'?'att-absent':'att-none'}" onclick="toggleAtt('${k}','${cid}')">${v||'–'}</button></td>`}).join('')}
+        <td style="text-align:center">${pct!==null?`<div style="display:flex;align-items:center;gap:4px;justify-content:center"><div class="pct-bar"><div class="pct-fill" style="width:${pct}%;background:${pctColor(pct)}"></div></div><b style="color:${pctColor(pct)};font-size:11px">${pct}%</b></div>`:'–'}</td>
+      </tr>`}).join('')}</tbody>
+    </table></div>
+  </div>`}
+  <div class="panel"><h3>📊 All Classes Summary</h3><div class="stats-row">
+    ${CLS.map(cc=>{const p=classPct(cc.id);return`<div class="stat-card"><div>${cc.emoji}</div><div class="num" style="color:${p!==null?pctColor(p):'#ccc'}">${p!==null?p+'%':'–'}</div><div class="lbl">${cc.name}</div></div>`}).join('')}
+    <div class="stat-card" style="background:#f0f0ff"><div>🏫</div><div class="num" style="color:#7c6ff7">${overallPct()!==null?overallPct()+'%':'–'}</div><div class="lbl">Overall</div></div>
+  </div></div>`;}
+window.toggleAtt=async function(key,cid){
+  if(!S.attendance)S.attendance={};
+  const c=S.attendance[key]||'';S.attendance[key]=c===''?'P':c==='P'?'A':'';
+  await saveAttendance();
+};
+window.openAddSession=function(){const today=new Date().toISOString().split('T')[0];openModal(`<h3>Add Session</h3><div class="form-group"><label>Date</label><input type="date" id="m-sd" value="${today}"/></div><div class="modal-btns"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="addSession()">Add</button></div>`);};
+window.addSession=async function(){
+  const d=R('m-sd').value;if(!d)return;
+  if(!(S.sessions||[]).includes(d)){S.sessions=[...(S.sessions||[]),d];S.sessions.sort();await saveSessions();}
+  closeModal();
+};
+window.dlAtt=function(){
+  const wb=XLSX.utils.book_new();
+  CLS.forEach(cl=>{const st=studsIn(cl.id),rows=[['Student',...(S.sessions||[]),'Attendance %']];
+    st.forEach(s=>{const p=attPct(s.id);rows.push([s.name,...(S.sessions||[]).map(sess=>(S.attendance||{})[sess+'_'+s.id]||'–'),p!==null?p+'%':'–']);});
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),cl.name);});
+  const sum=[['Class','Students','Avg %']];
+  CLS.forEach(cl=>sum.push([cl.name,studsIn(cl.id).length,classPct(cl.id)!==null?classPct(cl.id)+'%':'–']));
+  sum.push(['OVERALL',(S.students||[]).length,overallPct()!==null?overallPct()+'%':'–']);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sum),'Summary');
+  XLSX.writeFile(wb,'Church_Attendance.xlsx');
+};
+
+// BEH
+function renderBehTab(cid){
+  if(!R('tab-body'))return;
+  const studs=studsIn(cid),notes=(S.behaviour||[]).filter(b=>studs.find(s=>s.id===b.sid));
+  R('tab-body').innerHTML=`<div class="panel"><h3>Behaviour & Notes</h3>
+    ${notes.length?notes.slice().reverse().map(b=>{const s=(S.students||[]).find(x=>x.id===b.sid);if(!s)return'';return`
+    <div class="srow"><div class="avatar" style="background:${s.avatar}">${ini(s.name)}</div>
+    <div style="flex:1"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:700">${s.name}</span>
+      <span style="font-size:10px;font-weight:700;color:#7c6ff7">${b.date}</span>
+      ${(b.chips||[]).map(ch=>`<span class="tag tag-blue">${ch}</span>`).join('')}
+    </div>${b.note?`<div style="font-size:11px;color:#555;margin-top:2px">${b.note}</div>`:''}</div>
+    <button class="btn btn-danger btn-sm" onclick="delNote('${b.id}')">✕</button></div>`}).join(''):
+    '<div class="empty-state"><div class="bi">📝</div><p>No notes yet</p></div>'}
+  </div>`;}
+window.openBehModal=function(cid){
+  const studs=studsIn(cid),today=new Date().toISOString().split('T')[0];
+  openModal(`<h3>Add Behaviour Note</h3>
+    <div class="form-row">
+      <div class="form-group"><label>Student</label><select id="m-bs">${studs.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</select></div>
+      <div class="form-group"><label>Date</label><input type="date" id="m-bd" value="${today}"/></div>
+    </div>
+    <div class="form-group" style="margin-bottom:8px"><label>Tags</label>
+      <div class="chip-row">${BEHAVIOURS.map(b=>`<button class="chip" onclick="this.classList.toggle('sel')">${b}</button>`).join('')}</div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="m-bn" placeholder="Observations..."></textarea></div>
+    <div class="modal-btns"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveBeh('${cid}')">Save</button></div>`);
+};
+window.saveBeh=async function(cid){
+  S.behaviour=[...(S.behaviour||[]),{id:'b'+Date.now(),sid:R('m-bs').value,date:R('m-bd').value,
+    chips:[...document.querySelectorAll('.chip.sel')].map(c=>c.textContent),note:R('m-bn').value.trim()}];
+  await saveBehaviour();closeModal();classTab[cid]='behaviour';
+};
+window.delNote=async function(id){S.behaviour=(S.behaviour||[]).filter(b=>b.id!==id);await saveBehaviour();};
+
+// TESTS
+function renderTestTab(cid){
+  if(!R('tab-body'))return;
+  const studs=studsIn(cid),tests=(S.tests||[]).filter(t=>t.classId===cid);
+  R('tab-body').innerHTML=`<div class="panel"><h3>Test Results</h3>
+  ${!tests.length?'<div class="empty-state"><div class="bi">📊</div><p>No tests yet</p></div>':`
+  <div class="scroll-x"><table style="min-width:440px">
+    <thead><tr><th>Student</th>${tests.map(t=>`<th style="text-align:center">${t.name}<br><span style="font-size:9px;color:#aaa">${t.date}/${t.total}pts</span></th>`).join('')}<th style="text-align:center">Avg</th></tr></thead>
+    <tbody>${studs.map(s=>{const scores=tests.map(t=>(t.scores||{})[s.id]!==undefined?(t.scores||{})[s.id]:null);const valid=scores.filter(x=>x!==null);const avg=valid.length?Math.round(valid.reduce((a,b)=>a+b,0)/valid.length):null;return`<tr>
+      <td><div style="display:flex;align-items:center;gap:6px"><div class="avatar" style="background:${s.avatar}">${ini(s.name)}</div><b>${s.name}</b></div></td>
+      ${tests.map((t,i)=>`<td style="text-align:center"><input class="score-input" type="number" min="0" max="${t.total}" value="${scores[i]!==null?scores[i]:''}" placeholder="–" onchange="saveScore('${t.id}','${s.id}',this.value,${t.total})"/></td>`).join('')}
+      <td style="text-align:center;font-weight:700;color:${avg!==null?pctColor(Math.round(avg/(tests[0]?.total||100)*100)):'#ccc'}">${avg!==null?avg:'–'}</td>
+    </tr>`}).join('')}</tbody>
+  </table></div>`}</div>`;}
+window.openAddTest=function(cid){const today=new Date().toISOString().split('T')[0];openModal(`<h3>Add Test</h3>
+  <div class="form-row"><div class="form-group"><label>Test Name</label><input id="m-tn2" placeholder="e.g. Mid-Year Quiz"/></div><div class="form-group"><label>Date</label><input type="date" id="m-td" value="${today}"/></div></div>
+  <div class="form-group"><label>Total Points</label><input type="number" id="m-tt" value="100" min="1"/></div>
+  <div class="modal-btns"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="addTest('${cid}')">Add</button></div>`);};
+window.addTest=async function(cid){const name=R('m-tn2').value.trim();if(!name)return;S.tests=[...(S.tests||[]),{id:'t'+Date.now(),classId:cid,name,date:R('m-td').value,total:parseInt(R('m-tt').value)||100,scores:{}}];await saveTests();closeModal();};
+window.saveScore=async function(tid,sid,val,total){const t=(S.tests||[]).find(x=>x.id===tid);if(!t)return;if(!t.scores)t.scores={};const v=parseFloat(val);if(!isNaN(v)&&v>=0&&v<=total)t.scores[sid]=v;else delete t.scores[sid];await saveTests();};
+
+// UNIFORM
+function renderUniTab(cid){
+  if(!R('tab-body'))return;
+  const cl=clById(cid),studs=studsIn(cid);
+  const taken={};SIZES.forEach(sz=>{taken[sz]=(S.students||[]).filter(s=>(S.uniform||{})[s.id]?.size===sz).length;});
+  R('tab-body').innerHTML=`
+  <div class="panel"><h3>Choir Uniform Records</h3>
+  <div class="scroll-x"><table style="min-width:500px">
+    <thead><tr><th>Student</th><th>Size</th><th>Date Issued</th><th>Return Status</th></tr></thead>
+    <tbody>${studs.map(s=>{const u=(S.uniform||{})[s.id]||{};return`<tr>
+      <td><div style="display:flex;align-items:center;gap:6px"><div class="avatar" style="background:${s.avatar}">${ini(s.name)}</div><b>${s.name}</b></div></td>
+      <td><select onchange="saveUni('${s.id}','size',this.value)" style="border-radius:8px;padding:4px 8px;border:1.5px solid #e0e0f0;font-size:12px">
+        <option value="">– Not issued –</option>${SIZES.map(sz=>`<option value="${sz}" ${u.size===sz?'selected':''}>${sz}</option>`).join('')}
+      </select></td>
+      <td><input type="date" value="${u.date||''}" onchange="saveUni('${s.id}','date',this.value)" style="border-radius:8px;padding:4px 8px;border:1.5px solid #e0e0f0;font-size:11px"/></td>
+      <td><button class="uni-badge ${u.returned==='yes'?'uni-ret':u.returned==='no'?'uni-kept':'uni-none'}" onclick="toggleRet('${s.id}','${cid}')">
+        ${u.returned==='yes'?'✓ Returned':u.returned==='no'?'✗ Not Returned':'– Tap to set'}</button></td>
+    </tr>`}).join('')}</tbody>
+  </table></div></div>
+  <div class="panel"><h3>📦 Stock Overview (All Classes)</h3>
+  <div class="scroll-x"><table style="min-width:360px">
+    <thead><tr><th>Size</th><th>Stock</th><th>Taken</th><th>Remaining</th><th>Usage</th></tr></thead>
+    <tbody>${SIZES.map(sz=>{const tot=STOCK[sz],tk=taken[sz],rem=tot-tk,pct=Math.min(100,Math.round(tk/tot*100));return`<tr>
+      <td style="font-weight:700">${sz}</td><td>${tot}</td>
+      <td style="font-weight:600;color:#7c6ff7">${tk}</td>
+      <td style="font-weight:700;color:${rem<=0?'#ff6b9d':rem<=1?'#ff9f43':'#1dd1a1'}">${rem<=0?'None left':rem}</td>
+      <td><div style="display:flex;align-items:center;gap:5px"><div class="pct-bar" style="width:75px"><div class="pct-fill" style="width:${pct}%;background:${rem<=0?'#ff6b9d':rem<=1?'#ff9f43':'#1dd1a1'}"></div></div><span style="font-size:10px;color:#888">${pct}%</span></div></td>
+    </tr>`}).join('')}
+    <tr style="background:#f8f8ff;font-weight:700"><td>Total</td><td>${SIZES.reduce((a,sz)=>a+STOCK[sz],0)}</td>
+      <td style="color:#7c6ff7">${SIZES.reduce((a,sz)=>a+taken[sz],0)}</td>
+      <td style="color:#1dd1a1">${SIZES.reduce((a,sz)=>a+Math.max(0,STOCK[sz]-taken[sz]),0)}</td><td></td></tr>
+  </table></div></div>
+  <div class="panel"><h3>Summary — ${cl.name}</h3><div class="stats-row">
+    ${SIZES.map(sz=>{const n=studs.filter(s=>(S.uniform||{})[s.id]?.size===sz).length;return n?`<div class="stat-card"><div class="num">${n}</div><div class="lbl">Size ${sz}</div></div>`:''}).join('')}
+    <div class="stat-card"><div class="num" style="color:#1dd1a1">${studs.filter(s=>(S.uniform||{})[s.id]?.returned==='yes').length}</div><div class="lbl">Returned</div></div>
+    <div class="stat-card"><div class="num" style="color:#ff6b9d">${studs.filter(s=>(S.uniform||{})[s.id]?.returned==='no').length}</div><div class="lbl">Not Returned</div></div>
+  </div></div>`;}
+window.saveUni=async function(sid,field,val){if(!S.uniform)S.uniform={};if(!S.uniform[sid])S.uniform[sid]={};S.uniform[sid][field]=val;await saveUniform();};
+window.toggleRet=async function(sid,cid){if(!S.uniform)S.uniform={};if(!S.uniform[sid])S.uniform[sid]={};const c=S.uniform[sid].returned||'';S.uniform[sid].returned=c===''?'no':c==='no'?'yes':'';await saveUniform();};
+
+// ===== MODAL =====
+window.openModal=function(html){R('modal-box').innerHTML=html;R('modal-overlay').classList.add('open');};
+window.closeModal=function(){R('modal-overlay').classList.remove('open');};
+window.adminNav=adminNav;
+window.setScreen=setScreen;
+window.renderStudents=renderStudents;
+R('modal-overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+// ===== INIT =====
+startRealtimeSync();
+// Wait briefly for first data load then show landing
+setTimeout(()=>{if(screen==='loading'){screen='landing';renderRoot();}},2000);
+</script>
+</body>
+</html>
